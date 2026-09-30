@@ -7,15 +7,7 @@ This repository contains reproducible R examples for:
 
 Large raster datasets are not included in this repository.
 
-## Repository structure
 
-```text
-R/
-  01_calculate_sif_ar1.R
-  02_xgboost_shap_example.R
-.gitignore
-README.md
-```
 
 ## Requirements
 
@@ -58,25 +50,10 @@ Reference:
 
 The script removes the monthly seasonal cycle and linear trend, then calculates AR1 in a 60-month moving window.
 
-```bash
-Rscript R/01_calculate_sif_ar1.R INPUT_DIR OUTPUT_DIR 60 1 0.0001 NONE
-```
-
 Arguments after the input and output directories are window length, CPU cores, scale factor, and an optional raster mask. Use `NONE` when no mask is required.
-
-Main outputs:
-
-- `SIF_AR1_sliding_60_month.tif`
-- `SIF_AR1_temporal_mean.tif`
-- `SIF_AR1_processing_settings.csv`
-- `R_sessionInfo.txt`
 
 ## XGBoost and SHAP
 
 The example creates a simulated pixel-year dataset, splits it by pixel, trains an XGBoost model, evaluates held-out predictions, and calculates exact TreeSHAP values.
-
-```bash
-Rscript R/02_xgboost_shap_example.R outputs/xgboost_shap_example
-```
 
 The simulated data demonstrate the workflow only and must not be presented as empirical results. Manuscript reproduction should use the processed study data while retaining spatially independent data splitting.
