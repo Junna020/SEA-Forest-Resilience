@@ -1,0 +1,23 @@
+# R/RStudio files
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+
+# Raw and derived raster data are intentionally not distributed on GitHub
+data/
+outputs/
+*.tif
+*.tiff
+*.grd
+*.gri
+*.nc
+*.rds
+*.RData
+*.zip
+*.gz
+
+# Temporary files
+*.tmp
+*.log
+terra_tmp/
