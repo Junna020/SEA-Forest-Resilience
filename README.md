@@ -80,32 +80,3 @@ Rscript R/02_xgboost_shap_example.R outputs/xgboost_shap_example
 ```
 
 The simulated data demonstrate the workflow only and must not be presented as empirical results. Manuscript reproduction should use the processed study data while retaining spatially independent data splitting.
-
-## Upload to GitHub
-
-Create an empty repository at <https://github.com/new> using these settings:
-
-- Repository name: `sif-resilience-analysis`
-- Visibility: `Private` during preparation or `Public` after release
-- Add README: unchecked
-- Add `.gitignore`: none
-- License: MIT is recommended
-
-Then run:
-
-```bash
-git init
-git add README.md .gitignore R
-git commit -m "Initial release"
-git branch -M main
-git remote add origin https://github.com/YOUR_ACCOUNT/sif-resilience-analysis.git
-git push -u origin main
-```
-
-Do not upload raw rasters, full-resolution outputs, credentials, local package libraries, or restricted third-party data. Large research outputs can be deposited in Zenodo, Dryad, or Figshare.
-
-## Code availability
-
-The R code for calculating moving-window SIF-based AR1 and demonstrating the XGBoost-SHAP workflow is available at `https://github.com/ACCOUNT/REPOSITORY`. Original GOSIF data are available from the University of New Hampshire Global Ecology Data Repository.
-
-Replace the placeholder repository address before publication.
