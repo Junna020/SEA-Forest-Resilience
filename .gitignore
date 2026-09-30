@@ -4,8 +4,8 @@
 .Ruserdata
 .Rproj.user/
 
-# Raw and derived raster data are intentionally not distributed on GitHub
-data/
+# Raw and derived full-resolution data are intentionally not distributed
+raw_data/
 outputs/
 *.tif
 *.tiff
@@ -21,3 +21,6 @@ outputs/
 *.tmp
 *.log
 terra_tmp/
+
+# Keep the small Nature-review demonstration rasters
+!data/sif_demo/*.tif

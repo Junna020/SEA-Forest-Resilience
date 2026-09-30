@@ -1,11 +1,12 @@
 #!/usr/bin/env Rscript
 
-# Reproducible XGBoost + SHAP example using simulated pixel-year data.
-# The example uses a pixel-level split, so observations from one pixel never
-# appear in more than one of the training, validation, and test sets.
+# Reproducible XGBoost + SHAP analysis for a pixel-year table.
+# Observations from one pixel never appear in more than one data subset.
 
 args <- commandArgs(trailingOnly = TRUE)
-output_dir <- if (length(args)) args[1] else "outputs/xgboost_shap_example"
+input_file <- if (length(args) >= 1L) args[1] else "data/xgboost_demo_data.csv"
+output_dir <- if (length(args) >= 2L) args[2] else "outputs/xgboost_shap_demo"
+if (!file.exists(input_file)) stop("Input CSV not found: ", input_file)
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
 required <- c("data.table", "xgboost", "ggplot2", "svglite", "ragg")
@@ -14,57 +15,33 @@ if (length(missing)) {
   stop("Install required packages first: ", paste(missing, collapse = ", "))
 }
 
-set.seed(20260930)
-n_pixels <- 1000L
-years <- 2005:2020
-
 # -----------------------------------------------------------------------------
-# 1. Simulate an example environmental panel
+# 1. Read and validate a pixel-year table
 # -----------------------------------------------------------------------------
-pixel <- data.table::data.table(
-  pixel_id = seq_len(n_pixels),
-  MAT_base = stats::rnorm(n_pixels, 24, 2.2),
-  MAP_base = stats::rgamma(n_pixels, shape = 8, scale = 280),
-  HFP_base = pmax(0, stats::rgamma(n_pixels, shape = 1.8, scale = 3)),
-  SM_base = pmin(0.42, pmax(0.12, stats::rnorm(n_pixels, 0.27, 0.045)))
-)
-dat <- data.table::CJ(pixel_id = pixel$pixel_id, year = years)
-dat <- pixel[dat, on = "pixel_id"]
-dat[, year_index := year - min(year)]
-dat[, `:=`(
-  MAT = MAT_base + 0.025 * year_index + rnorm(.N, 0, 0.45),
-  MAP = pmax(400, MAP_base + rnorm(.N, 0, 220)),
-  HFP = pmax(0, HFP_base + 0.08 * year_index + rnorm(.N, 0, 0.35)),
-  SM = pmin(0.48, pmax(0.08, SM_base + rnorm(.N, 0, 0.018)))
-)]
-dat[, VPD := pmax(0.08, 0.16 * MAT - 4.5 * SM - 0.00008 * MAP + rnorm(.N, 0, 0.12))]
-dat[, SolarRad := 185 + 3.2 * MAT - 0.006 * MAP + rnorm(.N, 0, 8)]
-dat[, MAT_variability := abs(rnorm(.N, 1.1 + 0.015 * year_index, 0.22))]
-dat[, VPD_variability := abs(rnorm(.N, 0.16 + 0.018 * VPD, 0.035))]
-
-z <- function(x) as.numeric(scale(x))
-dat[, AR1 :=
-  0.34 +
-  0.050 * z(VPD) +
-  0.040 * z(HFP) -
-  0.035 * z(MAP) -
-  0.025 * z(SM) +
-  0.030 * z(VPD) * z(HFP) +
-  0.018 * pmax(z(MAT), 0)^2 +
-  0.015 * z(VPD_variability) +
-  rnorm(.N, 0, 0.055)
-]
-dat[, AR1 := pmin(0.90, pmax(-0.20, AR1))]
-
 feature_names <- c(
   "MAT", "MAP", "VPD", "SM", "HFP", "SolarRad",
   "MAT_variability", "VPD_variability"
 )
+required_columns <- c("pixel_id", "year", "AR1", feature_names)
+dat <- data.table::fread(input_file)
+missing_columns <- setdiff(required_columns, names(dat))
+if (length(missing_columns)) {
+  stop("Input CSV is missing columns: ", paste(missing_columns, collapse = ", "))
+}
+dat <- dat[, ..required_columns]
+dat <- dat[stats::complete.cases(dat)]
+if (data.table::uniqueN(dat$pixel_id) < 20L) stop("At least 20 unique pixels are required.")
+if (any(!vapply(dat[, c("AR1", feature_names), with = FALSE], is.numeric, logical(1)))) {
+  stop("AR1 and all predictor columns must be numeric.")
+}
+
+set.seed(20260930)
 
 # -----------------------------------------------------------------------------
 # 2. Split by pixel: 70% train, 15% validation, 15% independent test
 # -----------------------------------------------------------------------------
-pixel_order <- sample(pixel$pixel_id)
+pixel_order <- sample(unique(dat$pixel_id))
+n_pixels <- length(pixel_order)
 n_train <- floor(0.70 * n_pixels)
 n_validation <- floor(0.15 * n_pixels)
 train_pixels <- pixel_order[seq_len(n_train)]
@@ -235,7 +212,6 @@ save_plot(p_beeswarm, file.path(output_dir, "SHAP_beeswarm"), 120, 92)
 save_plot(p_importance, file.path(output_dir, "SHAP_importance"), 90, 80)
 save_plot(p_dependence, file.path(output_dir, "SHAP_dependence"), 150, 120)
 
-data.table::fwrite(dat, file.path(output_dir, "simulated_pixel_year_data.csv.gz"), compress = "gzip")
 writeLines(capture.output(sessionInfo()), file.path(output_dir, "R_sessionInfo.txt"))
 
 message(sprintf("Held-out performance: R2 = %.3f; RMSE = %.3f", r2, rmse))
